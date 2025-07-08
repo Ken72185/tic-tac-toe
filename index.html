@@ -367,6 +367,9 @@
         }
 
         function showCreateRoom() {
+            // Clear previous input
+            document.getElementById('roomName').value = '';
+            document.getElementById('createRoomError').style.display = 'none';
             showScreen('createRoomScreen');
         }
 
@@ -375,6 +378,7 @@
             document.getElementById('roomCode').value = '';
             document.getElementById('joinRoomError').style.display = 'none';
             updateAvailableRooms();
+            updateDebugInfo();
             showScreen('joinRoomScreen');
         }
 
@@ -416,6 +420,9 @@
         function joinRoom() {
             const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
             
+            // Update debug info
+            updateDebugInfo();
+            
             if (!roomCode) {
                 showError('joinRoomError', 'Kode room tidak boleh kosong!');
                 return;
@@ -423,10 +430,11 @@
 
             console.log('Trying to join room:', roomCode);
             console.log('Available rooms:', Object.keys(rooms));
+            console.log('Current user:', currentUser);
 
             const room = rooms[roomCode];
             if (!room) {
-                showError('joinRoomError', 'Room tidak ditemukan! Pastikan kode room benar.');
+                showError('joinRoomError', `Room "${roomCode}" tidak ditemukan! Rooms yang tersedia: ${Object.keys(rooms).join(', ') || 'Tidak ada'}`);
                 return;
             }
 
@@ -440,12 +448,22 @@
                 return;
             }
 
+            console.log('Joining room successfully:', room);
             room.players.push(currentUser);
             currentRoom = room;
             document.getElementById('currentRoomCode').textContent = roomCode;
             
             initializeGame();
             showScreen('gameScreen');
+        }
+
+        function updateDebugInfo() {
+            const debugElement = document.getElementById('debugRooms');
+            const roomsInfo = Object.keys(rooms).map(code => {
+                const room = rooms[code];
+                return `${code}: ${room.name} (${room.players.join(', ')})`;
+            });
+            debugElement.innerHTML = roomsInfo.length > 0 ? roomsInfo.join('<br>') : 'Tidak ada room';
         }
 
         function joinRoomFromList(roomCode) {
@@ -460,6 +478,8 @@
         function updateAvailableRooms() {
             const availableRoomsDiv = document.getElementById('availableRooms');
             availableRoomsDiv.innerHTML = '';
+
+            console.log('Updating available rooms, current rooms:', rooms);
 
             const availableRooms = Object.values(rooms).filter(room => 
                 room.players.length < 2 && !room.players.includes(currentUser)
