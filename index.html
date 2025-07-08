@@ -220,6 +220,15 @@
             text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
         }
 
+        .debug-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 12px;
+            text-align: left;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -240,7 +249,7 @@
                 <label for="username">Username:</label>
                 <input type="text" id="username" placeholder="Masukkan username Anda" maxlength="20">
             </div>
-            <button class="btn" onclick="login()">Masuk</button>
+            <button class="btn" onclick="handleLogin()">Masuk</button>
             <div id="loginError" class="error" style="display: none;"></div>
         </div>
 
@@ -248,8 +257,8 @@
         <div id="menuScreen" class="screen">
             <h2>Selamat datang, <span id="welcomeUsername"></span>!</h2>
             <div style="margin: 30px 0;">
-                <button class="btn" onclick="showCreateRoom()">Buat Room</button>
-                <button class="btn" onclick="showJoinRoom()">Join Room</button>
+                <button class="btn" onclick="goToCreateRoom()">Buat Room</button>
+                <button class="btn" onclick="goToJoinRoom()">Join Room</button>
             </div>
         </div>
 
@@ -260,8 +269,8 @@
                 <label for="roomName">Nama Room:</label>
                 <input type="text" id="roomName" placeholder="Masukkan nama room" maxlength="30">
             </div>
-            <button class="btn" onclick="createRoom()">Buat Room</button>
-            <button class="btn" onclick="showMenu()">Kembali</button>
+            <button class="btn" onclick="handleCreateRoom()">Buat Room</button>
+            <button class="btn" onclick="backToMenu()">Kembali</button>
             <div id="createRoomError" class="error" style="display: none;"></div>
         </div>
 
@@ -272,13 +281,19 @@
                 <label for="roomCode">Kode Room:</label>
                 <input type="text" id="roomCode" placeholder="Masukkan kode room" maxlength="10">
             </div>
-            <button class="btn" onclick="joinRoom()">Join Room</button>
-            <button class="btn" onclick="showMenu()">Kembali</button>
+            <button class="btn" onclick="handleJoinRoom()">Join Room</button>
+            <button class="btn" onclick="backToMenu()">Kembali</button>
             
             <div class="room-list">
                 <h3>Room yang Tersedia:</h3>
                 <div id="availableRooms"></div>
             </div>
+            
+            <div class="debug-info">
+                <strong>Debug Info:</strong>
+                <div id="debugRooms">Loading...</div>
+            </div>
+            
             <div id="joinRoomError" class="error" style="display: none;"></div>
         </div>
 
@@ -294,39 +309,40 @@
             </div>
             
             <div class="game-board">
-                <button class="cell" onclick="makeMove(0)"></button>
-                <button class="cell" onclick="makeMove(1)"></button>
-                <button class="cell" onclick="makeMove(2)"></button>
-                <button class="cell" onclick="makeMove(3)"></button>
-                <button class="cell" onclick="makeMove(4)"></button>
-                <button class="cell" onclick="makeMove(5)"></button>
-                <button class="cell" onclick="makeMove(6)"></button>
-                <button class="cell" onclick="makeMove(7)"></button>
-                <button class="cell" onclick="makeMove(8)"></button>
+                <button class="cell" data-index="0" onclick="handleCellClick(0)"></button>
+                <button class="cell" data-index="1" onclick="handleCellClick(1)"></button>
+                <button class="cell" data-index="2" onclick="handleCellClick(2)"></button>
+                <button class="cell" data-index="3" onclick="handleCellClick(3)"></button>
+                <button class="cell" data-index="4" onclick="handleCellClick(4)"></button>
+                <button class="cell" data-index="5" onclick="handleCellClick(5)"></button>
+                <button class="cell" data-index="6" onclick="handleCellClick(6)"></button>
+                <button class="cell" data-index="7" onclick="handleCellClick(7)"></button>
+                <button class="cell" data-index="8" onclick="handleCellClick(8)"></button>
             </div>
             
             <div style="margin-top: 20px;">
-                <button class="btn" onclick="resetGame()">Reset Game</button>
-                <button class="btn" onclick="leaveRoom()">Keluar Room</button>
+                <button class="btn" onclick="handleResetGame()">Reset Game</button>
+                <button class="btn" onclick="handleLeaveRoom()">Keluar Room</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let currentUser = null;
-        let currentRoom = null;
-        let gameState = {
-            board: Array(9).fill(''),
-            currentPlayer: 'X',
-            gameOver: false,
-            winner: null,
-            players: []
+        // Global state
+        let gameData = {
+            currentUser: null,
+            rooms: {},
+            currentRoom: null,
+            gameState: {
+                board: Array(9).fill(''),
+                currentPlayer: 'X',
+                gameOver: false,
+                winner: null
+            },
+            isPlayerTurn: false
         };
-        let rooms = {};
-        let isPlayerTurn = false;
 
-        // Screen management
+        // Utility functions
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
@@ -340,11 +356,32 @@
             errorElement.style.display = 'block';
             setTimeout(() => {
                 errorElement.style.display = 'none';
-            }, 3000);
+            }, 5000);
+        }
+
+        function generateRoomCode() {
+            return Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
+
+        function updateDebugInfo() {
+            const debugElement = document.getElementById('debugRooms');
+            const roomKeys = Object.keys(gameData.rooms);
+            
+            if (roomKeys.length === 0) {
+                debugElement.innerHTML = 'Tidak ada room yang tersedia';
+                return;
+            }
+
+            const roomsInfo = roomKeys.map(code => {
+                const room = gameData.rooms[code];
+                return `${code}: "${room.name}" - Players: ${room.players.join(', ')} (${room.players.length}/2)`;
+            }).join('<br>');
+            
+            debugElement.innerHTML = roomsInfo;
         }
 
         // Login functionality
-        function login() {
+        function handleLogin() {
             const username = document.getElementById('username').value.trim();
             
             if (!username) {
@@ -357,24 +394,23 @@
                 return;
             }
 
-            currentUser = username;
+            gameData.currentUser = username;
             document.getElementById('welcomeUsername').textContent = username;
             showScreen('menuScreen');
         }
 
-        function showMenu() {
+        function backToMenu() {
             showScreen('menuScreen');
         }
 
-        function showCreateRoom() {
-            // Clear previous input
+        // Navigation
+        function goToCreateRoom() {
             document.getElementById('roomName').value = '';
             document.getElementById('createRoomError').style.display = 'none';
             showScreen('createRoomScreen');
         }
 
-        function showJoinRoom() {
-            // Clear previous input
+        function goToJoinRoom() {
             document.getElementById('roomCode').value = '';
             document.getElementById('joinRoomError').style.display = 'none';
             updateAvailableRooms();
@@ -383,7 +419,7 @@
         }
 
         // Room management
-        function createRoom() {
+        function handleCreateRoom() {
             const roomName = document.getElementById('roomName').value.trim();
             
             if (!roomName) {
@@ -392,13 +428,11 @@
             }
 
             const roomCode = generateRoomCode();
-            console.log('Creating room with code:', roomCode);
-            
-            currentRoom = {
+            const newRoom = {
                 code: roomCode,
                 name: roomName,
-                players: [currentUser],
-                creator: currentUser,
+                players: [gameData.currentUser],
+                creator: gameData.currentUser,
                 gameState: {
                     board: Array(9).fill(''),
                     currentPlayer: 'X',
@@ -407,36 +441,32 @@
                 }
             };
             
-            rooms[roomCode] = currentRoom;
-            console.log('Room created:', currentRoom);
-            console.log('All rooms:', rooms);
+            gameData.rooms[roomCode] = newRoom;
+            gameData.currentRoom = newRoom;
+            
+            console.log('Room created:', newRoom);
+            console.log('All rooms:', gameData.rooms);
             
             document.getElementById('currentRoomCode').textContent = roomCode;
-            
             initializeGame();
             showScreen('gameScreen');
         }
 
-        function joinRoom() {
-            alert('joinRoom function called!'); // Debug alert
-            
+        function handleJoinRoom() {
             const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
             
-            // Update debug info
-            updateDebugInfo();
+            console.log('Attempting to join room:', roomCode);
+            console.log('Available rooms:', Object.keys(gameData.rooms));
             
             if (!roomCode) {
                 showError('joinRoomError', 'Kode room tidak boleh kosong!');
                 return;
             }
 
-            console.log('Trying to join room:', roomCode);
-            console.log('Available rooms:', Object.keys(rooms));
-            console.log('Current user:', currentUser);
-
-            const room = rooms[roomCode];
+            const room = gameData.rooms[roomCode];
             if (!room) {
-                showError('joinRoomError', `Room "${roomCode}" tidak ditemukan! Rooms yang tersedia: ${Object.keys(rooms).join(', ') || 'Tidak ada'}`);
+                const availableRooms = Object.keys(gameData.rooms).join(', ') || 'Tidak ada';
+                showError('joinRoomError', `Room "${roomCode}" tidak ditemukan! Rooms tersedia: ${availableRooms}`);
                 return;
             }
 
@@ -445,46 +475,32 @@
                 return;
             }
 
-            if (room.players.includes(currentUser)) {
+            if (room.players.includes(gameData.currentUser)) {
                 showError('joinRoomError', 'Anda sudah ada di room ini!');
                 return;
             }
 
-            console.log('Joining room successfully:', room);
-            room.players.push(currentUser);
-            currentRoom = room;
-            document.getElementById('currentRoomCode').textContent = roomCode;
+            room.players.push(gameData.currentUser);
+            gameData.currentRoom = room;
             
+            console.log('Successfully joined room:', room);
+            
+            document.getElementById('currentRoomCode').textContent = roomCode;
             initializeGame();
             showScreen('gameScreen');
         }
 
-        function updateDebugInfo() {
-            const debugElement = document.getElementById('debugRooms');
-            const roomsInfo = Object.keys(rooms).map(code => {
-                const room = rooms[code];
-                return `${code}: ${room.name} (${room.players.join(', ')})`;
-            });
-            debugElement.innerHTML = roomsInfo.length > 0 ? roomsInfo.join('<br>') : 'Tidak ada room';
-        }
-
-        function joinRoomFromList(roomCode) {
+        function joinRoomDirectly(roomCode) {
             document.getElementById('roomCode').value = roomCode;
-            joinRoom();
-        }
-
-        function generateRoomCode() {
-            return Math.random().toString(36).substr(2, 6).toUpperCase();
+            handleJoinRoom();
         }
 
         function updateAvailableRooms() {
             const availableRoomsDiv = document.getElementById('availableRooms');
             availableRoomsDiv.innerHTML = '';
 
-            console.log('Updating available rooms, current rooms:', rooms);
-
-            const availableRooms = Object.values(rooms).filter(room => 
-                room.players.length < 2 && !room.players.includes(currentUser)
+            const availableRooms = Object.values(gameData.rooms).filter(room => 
+                room.players.length < 2 && !room.players.includes(gameData.currentUser)
             );
 
             if (availableRooms.length === 0) {
@@ -500,7 +516,7 @@
                         <div style="font-weight: bold;">${room.name}</div>
                         <div style="font-size: 12px; opacity: 0.8;">Code: ${room.code} | Players: ${room.players.length}/2</div>
                     </div>
-                    <button class="btn" onclick="joinRoomFromList('${room.code}')" style="padding: 8px 15px; margin: 0;">Join</button>
+                    <button class="btn" onclick="joinRoomDirectly('${room.code}')" style="padding: 8px 15px; margin: 0;">Join</button>
                 `;
                 availableRoomsDiv.appendChild(roomItem);
             });
@@ -508,22 +524,22 @@
 
         // Game functionality
         function initializeGame() {
-            if (!currentRoom) return;
+            if (!gameData.currentRoom) return;
 
-            gameState = { ...currentRoom.gameState };
+            gameData.gameState = { ...gameData.currentRoom.gameState };
             
             updatePlayerDisplay();
             updateGameStatus();
             updateBoard();
             
             // Determine if it's player's turn
-            if (currentRoom.players.length === 2) {
-                const playerIndex = currentRoom.players.indexOf(currentUser);
-                const currentPlayerSymbol = gameState.currentPlayer;
-                isPlayerTurn = (playerIndex === 0 && currentPlayerSymbol === 'X') || 
-                              (playerIndex === 1 && currentPlayerSymbol === 'O');
+            if (gameData.currentRoom.players.length === 2) {
+                const playerIndex = gameData.currentRoom.players.indexOf(gameData.currentUser);
+                const currentPlayerSymbol = gameData.gameState.currentPlayer;
+                gameData.isPlayerTurn = (playerIndex === 0 && currentPlayerSymbol === 'X') || 
+                                      (playerIndex === 1 && currentPlayerSymbol === 'O');
             } else {
-                isPlayerTurn = false;
+                gameData.isPlayerTurn = false;
             }
         }
 
@@ -531,14 +547,14 @@
             const player1Element = document.getElementById('player1');
             const player2Element = document.getElementById('player2');
             
-            if (currentRoom.players.length >= 1) {
-                player1Element.textContent = `${currentRoom.players[0]} (X)`;
-                player1Element.classList.toggle('active', gameState.currentPlayer === 'X' && !gameState.gameOver);
+            if (gameData.currentRoom.players.length >= 1) {
+                player1Element.textContent = `${gameData.currentRoom.players[0]} (X)`;
+                player1Element.classList.toggle('active', gameData.gameState.currentPlayer === 'X' && !gameData.gameState.gameOver);
             }
             
-            if (currentRoom.players.length >= 2) {
-                player2Element.textContent = `${currentRoom.players[1]} (O)`;
-                player2Element.classList.toggle('active', gameState.currentPlayer === 'O' && !gameState.gameOver);
+            if (gameData.currentRoom.players.length >= 2) {
+                player2Element.textContent = `${gameData.currentRoom.players[1]} (O)`;
+                player2Element.classList.toggle('active', gameData.gameState.currentPlayer === 'O' && !gameData.gameState.gameOver);
             } else {
                 player2Element.textContent = 'Menunggu pemain...';
                 player2Element.classList.remove('active');
@@ -548,20 +564,22 @@
         function updateGameStatus() {
             const statusElement = document.getElementById('gameStatus');
             
-            if (gameState.gameOver) {
-                if (gameState.winner) {
-                    const winnerName = gameState.winner === 'X' ? currentRoom.players[0] : currentRoom.players[1];
+            if (gameData.gameState.gameOver) {
+                if (gameData.gameState.winner) {
+                    const winnerName = gameData.gameState.winner === 'X' ? 
+                        gameData.currentRoom.players[0] : gameData.currentRoom.players[1];
                     statusElement.textContent = `🎉 ${winnerName} Menang!`;
                     statusElement.className = 'status winner';
                 } else {
                     statusElement.textContent = '🤝 Seri!';
                     statusElement.className = 'status';
                 }
-            } else if (currentRoom.players.length < 2) {
+            } else if (gameData.currentRoom.players.length < 2) {
                 statusElement.textContent = '⏳ Menunggu pemain lain...';
                 statusElement.className = 'status waiting waiting-animation';
             } else {
-                const currentPlayerName = gameState.currentPlayer === 'X' ? currentRoom.players[0] : currentRoom.players[1];
+                const currentPlayerName = gameData.gameState.currentPlayer === 'X' ? 
+                    gameData.currentRoom.players[0] : gameData.currentRoom.players[1];
                 statusElement.textContent = `🎯 Giliran ${currentPlayerName}`;
                 statusElement.className = 'status';
             }
@@ -570,40 +588,47 @@
         function updateBoard() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
-                cell.textContent = gameState.board[index];
-                cell.disabled = gameState.board[index] !== '' || gameState.gameOver || !isPlayerTurn || currentRoom.players.length < 2;
+                cell.textContent = gameData.gameState.board[index];
+                cell.disabled = gameData.gameState.board[index] !== '' || 
+                               gameData.gameState.gameOver || 
+                               !gameData.isPlayerTurn || 
+                               gameData.currentRoom.players.length < 2;
             });
         }
 
-        function makeMove(index) {
-            if (!currentRoom || gameState.gameOver || gameState.board[index] !== '' || !isPlayerTurn || currentRoom.players.length < 2) {
+        function handleCellClick(index) {
+            if (!gameData.currentRoom || 
+                gameData.gameState.gameOver || 
+                gameData.gameState.board[index] !== '' || 
+                !gameData.isPlayerTurn || 
+                gameData.currentRoom.players.length < 2) {
                 return;
             }
 
             // Make the move
-            gameState.board[index] = gameState.currentPlayer;
-            currentRoom.gameState.board[index] = gameState.currentPlayer;
+            gameData.gameState.board[index] = gameData.gameState.currentPlayer;
+            gameData.currentRoom.gameState.board[index] = gameData.gameState.currentPlayer;
 
             // Check for winner
             const winner = checkWinner();
             if (winner) {
-                gameState.gameOver = true;
-                gameState.winner = winner;
-                currentRoom.gameState.gameOver = true;
-                currentRoom.gameState.winner = winner;
-            } else if (gameState.board.every(cell => cell !== '')) {
-                gameState.gameOver = true;
-                currentRoom.gameState.gameOver = true;
+                gameData.gameState.gameOver = true;
+                gameData.gameState.winner = winner;
+                gameData.currentRoom.gameState.gameOver = true;
+                gameData.currentRoom.gameState.winner = winner;
+            } else if (gameData.gameState.board.every(cell => cell !== '')) {
+                gameData.gameState.gameOver = true;
+                gameData.currentRoom.gameState.gameOver = true;
             } else {
                 // Switch turns
-                gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-                currentRoom.gameState.currentPlayer = gameState.currentPlayer;
+                gameData.gameState.currentPlayer = gameData.gameState.currentPlayer === 'X' ? 'O' : 'X';
+                gameData.currentRoom.gameState.currentPlayer = gameData.gameState.currentPlayer;
                 
                 // Update turn status
-                const playerIndex = currentRoom.players.indexOf(currentUser);
-                const currentPlayerSymbol = gameState.currentPlayer;
-                isPlayerTurn = (playerIndex === 0 && currentPlayerSymbol === 'X') || 
-                              (playerIndex === 1 && currentPlayerSymbol === 'O');
+                const playerIndex = gameData.currentRoom.players.indexOf(gameData.currentUser);
+                const currentPlayerSymbol = gameData.gameState.currentPlayer;
+                gameData.isPlayerTurn = (playerIndex === 0 && currentPlayerSymbol === 'X') || 
+                                      (playerIndex === 1 && currentPlayerSymbol === 'O');
             }
 
             updatePlayerDisplay();
@@ -620,29 +645,31 @@
 
             for (const pattern of winPatterns) {
                 const [a, b, c] = pattern;
-                if (gameState.board[a] && gameState.board[a] === gameState.board[b] && gameState.board[a] === gameState.board[c]) {
-                    return gameState.board[a];
+                if (gameData.gameState.board[a] && 
+                    gameData.gameState.board[a] === gameData.gameState.board[b] && 
+                    gameData.gameState.board[a] === gameData.gameState.board[c]) {
+                    return gameData.gameState.board[a];
                 }
             }
             return null;
         }
 
-        function resetGame() {
-            if (!currentRoom) return;
+        function handleResetGame() {
+            if (!gameData.currentRoom) return;
 
-            gameState = {
+            gameData.gameState = {
                 board: Array(9).fill(''),
                 currentPlayer: 'X',
                 gameOver: false,
                 winner: null
             };
             
-            currentRoom.gameState = { ...gameState };
+            gameData.currentRoom.gameState = { ...gameData.gameState };
             
             // Reset turn status
-            if (currentRoom.players.length === 2) {
-                const playerIndex = currentRoom.players.indexOf(currentUser);
-                isPlayerTurn = playerIndex === 0; // Player 1 (X) goes first
+            if (gameData.currentRoom.players.length === 2) {
+                const playerIndex = gameData.currentRoom.players.indexOf(gameData.currentUser);
+                gameData.isPlayerTurn = playerIndex === 0; // Player 1 (X) goes first
             }
 
             updatePlayerDisplay();
@@ -650,35 +677,36 @@
             updateBoard();
         }
 
-        function leaveRoom() {
-            if (currentRoom) {
+        function handleLeaveRoom() {
+            if (gameData.currentRoom) {
                 // Remove player from room
-                currentRoom.players = currentRoom.players.filter(player => player !== currentUser);
+                gameData.currentRoom.players = gameData.currentRoom.players.filter(
+                    player => player !== gameData.currentUser
+                );
                 
                 // Delete room if empty
-                if (currentRoom.players.length === 0) {
-                    delete rooms[currentRoom.code];
+                if (gameData.currentRoom.players.length === 0) {
+                    delete gameData.rooms[gameData.currentRoom.code];
                 }
             }
             
-            currentRoom = null;
-            isPlayerTurn = false;
+            gameData.currentRoom = null;
+            gameData.isPlayerTurn = false;
             showScreen('menuScreen');
         }
 
-        // Auto-refresh available rooms every 5 seconds when on join room screen
+        // Auto-refresh available rooms
         setInterval(() => {
             const joinRoomScreen = document.getElementById('joinRoomScreen');
             if (joinRoomScreen.classList.contains('active')) {
                 updateAvailableRooms();
+                updateDebugInfo();
             }
-        }, 5000);
+        }, 3000);
 
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            if (currentRoom) {
-                leaveRoom();
-            }
+        // Initialize debug info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebugInfo();
         });
     </script>
 </body>
