@@ -247,30 +247,30 @@
         <div id="loginScreen" class="screen active">
             <div class="input-group">
                 <label for="username">Username:</label>
-                <input type="text" id="username" placeholder="Masukkan username Anda" maxlength="20">
+                <input type="text" id="username" placeholder="Enter your username" maxlength="20">
             </div>
-            <button class="btn" onclick="handleLogin()">Masuk</button>
+            <button class="btn" onclick="handleLogin()">Login</button>
             <div id="loginError" class="error" style="display: none;"></div>
         </div>
 
         <!-- Menu Screen -->
         <div id="menuScreen" class="screen">
-            <h2>Selamat datang, <span id="welcomeUsername"></span>!</h2>
+            <h2>Welcome, <span id="welcomeUsername"></span>!</h2>
             <div style="margin: 30px 0;">
-                <button class="btn" onclick="goToCreateRoom()">Buat Room</button>
+                <button class="btn" onclick="goToCreateRoom()">Create Room</button>
                 <button class="btn" onclick="goToJoinRoom()">Join Room</button>
             </div>
         </div>
 
         <!-- Create Room Screen -->
         <div id="createRoomScreen" class="screen">
-            <h2>Buat Room Baru</h2>
+            <h2>Create New Room</h2>
             <div class="input-group">
-                <label for="roomName">Nama Room:</label>
-                <input type="text" id="roomName" placeholder="Masukkan nama room" maxlength="30">
+                <label for="roomName">Room Name:</label>
+                <input type="text" id="roomName" placeholder="Enter room name" maxlength="30">
             </div>
-            <button class="btn" onclick="handleCreateRoom()">Buat Room</button>
-            <button class="btn" onclick="backToMenu()">Kembali</button>
+            <button class="btn" onclick="handleCreateRoom()">Create Room</button>
+            <button class="btn" onclick="backToMenu()">Back</button>
             <div id="createRoomError" class="error" style="display: none;"></div>
         </div>
 
@@ -278,14 +278,14 @@
         <div id="joinRoomScreen" class="screen">
             <h2>Join Room</h2>
             <div class="input-group">
-                <label for="roomCode">Kode Room:</label>
-                <input type="text" id="roomCode" placeholder="Masukkan kode room" maxlength="10">
+                <label for="roomCode">Room Code:</label>
+                <input type="text" id="roomCode" placeholder="Enter room code" maxlength="10">
             </div>
             <button class="btn" onclick="handleJoinRoom()">Join Room</button>
-            <button class="btn" onclick="backToMenu()">Kembali</button>
+            <button class="btn" onclick="backToMenu()">Back</button>
             
             <div class="room-list">
-                <h3>Room yang Tersedia:</h3>
+                <h3>Available Rooms:</h3>
                 <div id="availableRooms"></div>
             </div>
             
@@ -305,7 +305,7 @@
                     <div id="player1" class="player">Player 1</div>
                     <div id="player2" class="player">Player 2</div>
                 </div>
-                <div id="gameStatus" class="status">Menunggu pemain...</div>
+                <div id="gameStatus" class="status">Waiting for players...</div>
             </div>
             
             <div class="game-board">
@@ -322,7 +322,7 @@
             
             <div style="margin-top: 20px;">
                 <button class="btn" onclick="handleResetGame()">Reset Game</button>
-                <button class="btn" onclick="handleLeaveRoom()">Keluar Room</button>
+                <button class="btn" onclick="handleLeaveRoom()">Leave Room</button>
             </div>
         </div>
     </div>
@@ -368,7 +368,7 @@
             const roomKeys = Object.keys(gameData.rooms);
             
             if (roomKeys.length === 0) {
-                debugElement.innerHTML = 'Tidak ada room yang tersedia';
+                debugElement.innerHTML = 'No rooms available';
                 return;
             }
 
@@ -385,12 +385,12 @@
             const username = document.getElementById('username').value.trim();
             
             if (!username) {
-                showError('loginError', 'Username tidak boleh kosong!');
+                showError('loginError', 'Username cannot be empty!');
                 return;
             }
             
             if (username.length < 3) {
-                showError('loginError', 'Username minimal 3 karakter!');
+                showError('loginError', 'Username must be at least 3 characters!');
                 return;
             }
 
@@ -423,7 +423,7 @@
             const roomName = document.getElementById('roomName').value.trim();
             
             if (!roomName) {
-                showError('createRoomError', 'Nama room tidak boleh kosong!');
+                showError('createRoomError', 'Room name cannot be empty!');
                 return;
             }
 
@@ -444,9 +444,6 @@
             gameData.rooms[roomCode] = newRoom;
             gameData.currentRoom = newRoom;
             
-            console.log('Room created:', newRoom);
-            console.log('All rooms:', gameData.rooms);
-            
             document.getElementById('currentRoomCode').textContent = roomCode;
             initializeGame();
             showScreen('gameScreen');
@@ -455,35 +452,30 @@
         function handleJoinRoom() {
             const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
             
-            console.log('Attempting to join room:', roomCode);
-            console.log('Available rooms:', Object.keys(gameData.rooms));
-            
             if (!roomCode) {
-                showError('joinRoomError', 'Kode room tidak boleh kosong!');
+                showError('joinRoomError', 'Room code cannot be empty!');
                 return;
             }
 
             const room = gameData.rooms[roomCode];
             if (!room) {
-                const availableRooms = Object.keys(gameData.rooms).join(', ') || 'Tidak ada';
-                showError('joinRoomError', `Room "${roomCode}" tidak ditemukan! Rooms tersedia: ${availableRooms}`);
+                const availableRooms = Object.keys(gameData.rooms).join(', ') || 'None';
+                showError('joinRoomError', `Room "${roomCode}" not found! Available rooms: ${availableRooms}`);
                 return;
             }
 
             if (room.players.length >= 2) {
-                showError('joinRoomError', 'Room sudah penuh!');
+                showError('joinRoomError', 'Room is full!');
                 return;
             }
 
             if (room.players.includes(gameData.currentUser)) {
-                showError('joinRoomError', 'Anda sudah ada di room ini!');
+                showError('joinRoomError', 'You are already in this room!');
                 return;
             }
 
             room.players.push(gameData.currentUser);
             gameData.currentRoom = room;
-            
-            console.log('Successfully joined room:', room);
             
             document.getElementById('currentRoomCode').textContent = roomCode;
             initializeGame();
@@ -504,7 +496,7 @@
             );
 
             if (availableRooms.length === 0) {
-                availableRoomsDiv.innerHTML = '<div style="text-align: center; opacity: 0.7;">Tidak ada room yang tersedia</div>';
+                availableRoomsDiv.innerHTML = '<div style="text-align: center; opacity: 0.7;">No rooms available</div>';
                 return;
             }
 
@@ -556,7 +548,7 @@
                 player2Element.textContent = `${gameData.currentRoom.players[1]} (O)`;
                 player2Element.classList.toggle('active', gameData.gameState.currentPlayer === 'O' && !gameData.gameState.gameOver);
             } else {
-                player2Element.textContent = 'Menunggu pemain...';
+                player2Element.textContent = 'Waiting for player...';
                 player2Element.classList.remove('active');
             }
         }
@@ -568,19 +560,19 @@
                 if (gameData.gameState.winner) {
                     const winnerName = gameData.gameState.winner === 'X' ? 
                         gameData.currentRoom.players[0] : gameData.currentRoom.players[1];
-                    statusElement.textContent = `🎉 ${winnerName} Menang!`;
+                    statusElement.textContent = `🎉 ${winnerName} wins!`;
                     statusElement.className = 'status winner';
                 } else {
-                    statusElement.textContent = '🤝 Seri!';
+                    statusElement.textContent = '🤝 Draw!';
                     statusElement.className = 'status';
                 }
             } else if (gameData.currentRoom.players.length < 2) {
-                statusElement.textContent = '⏳ Menunggu pemain lain...';
+                statusElement.textContent = '⏳ Waiting for another player...';
                 statusElement.className = 'status waiting waiting-animation';
             } else {
                 const currentPlayerName = gameData.gameState.currentPlayer === 'X' ? 
                     gameData.currentRoom.players[0] : gameData.currentRoom.players[1];
-                statusElement.textContent = `🎯 Giliran ${currentPlayerName}`;
+                statusElement.textContent = `🎯 ${currentPlayerName}'s turn`;
                 statusElement.className = 'status';
             }
         }
