@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe Multiplayer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #f0f0f0;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .room-list {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .room-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            max-width: 300px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 15px;
+        }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .cell:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .game-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .player {
+            padding: 8px 15px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+
+        .player.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .status {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .winner {
+            color: #4ecdc4;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        .waiting {
+            color: #ffd93d;
+            text-shadow: 0 0 10px rgba(255, 217, 61, 0.5);
+        }
+
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .room-code {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin: 10px 0;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .waiting-animation {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Tic Tac Toe</h1>
+        
+        <!-- Login Screen -->
+        <div id="loginScreen" class="screen active">
+            <div class="input-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Masukkan username Anda" maxlength="20">
+            </div>
+            <button class="btn" onclick="login()">Masuk</button>
+            <div id="loginError" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Menu Screen -->
+        <div id="menuScreen" class="screen">
+            <h2>Selamat datang, <span id="welcomeUsername"></span>!</h2>
+            <div style="margin: 30px 0;">
+                <button class="btn" onclick="showCreateRoom()">Buat Room</button>
+                <button class="btn" onclick="showJoinRoom()">Join Room</button>
+            </div>
+        </div>
+
+        <!-- Create Room Screen -->
+        <div id="createRoomScreen" class="screen">
+            <h2>Buat Room Baru</h2>
+            <div class="input-group">
+                <label for="roomName">Nama Room:</label>
+                <input type="text" id="roomName" placeholder="Masukkan nama room" maxlength="30">
+            </div>
+            <button class="btn" onclick="createRoom()">Buat Room</button>
+            <button class="btn" onclick="showMenu()">Kembali</button>
+            <div id="createRoomError" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Join Room Screen -->
+        <div id="joinRoomScreen" class="screen">
+            <h2>Join Room</h2>
+            <div class="input-group">
+                <label for="roomCode">Kode Room:</label>
+                <input type="text" id="roomCode" placeholder="Masukkan kode room" maxlength="10">
+            </div>
+            <button class="btn" onclick="joinRoom()">Join Room</button>
+            <button class="btn" onclick="showMenu()">Kembali</button>
+            
+            <div class="room-list">
+                <h3>Room yang Tersedia:</h3>
+                <div id="availableRooms"></div>
+            </div>
+            <div id="joinRoomError" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="game-info">
+                <div class="room-code">Room: <span id="currentRoomCode"></span></div>
+                <div class="player-info">
+                    <div id="player1" class="player">Player 1</div>
+                    <div id="player2" class="player">Player 2</div>
+                </div>
+                <div id="gameStatus" class="status">Menunggu pemain...</div>
+            </div>
+            
+            <div class="game-board">
+                <button class="cell" onclick="makeMove(0)"></button>
+                <button class="cell" onclick="makeMove(1)"></button>
+                <button class="cell" onclick="makeMove(2)"></button>
+                <button class="cell" onclick="makeMove(3)"></button>
+                <button class="cell" onclick="makeMove(4)"></button>
+                <button class="cell" onclick="makeMove(5)"></button>
+                <button class="cell" onclick="makeMove(6)"></button>
+                <button class="cell" onclick="makeMove(7)"></button>
+                <button class="cell" onclick="makeMove(8)"></button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="resetGame()">Reset Game</button>
+                <button class="btn" onclick="leaveRoom()">Keluar Room</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentRoom = null;
+        let gameState = {
+            board: Array(9).fill(''),
+            currentPlayer: 'X',
+            gameOver: false,
+            winner: null,
+            players: []
+        };
+        let rooms = {};
+        let isPlayerTurn = false;
+
+        // Screen management
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
+        }
+
+        // Login functionality
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            
+            if (!username) {
+                showError('loginError', 'Username tidak boleh kosong!');
+                return;
+            }
+            
+            if (username.length < 3) {
+                showError('loginError', 'Username minimal 3 karakter!');
+                return;
+            }
+
+            currentUser = username;
+            document.getElementById('welcomeUsername').textContent = username;
+            showScreen('menuScreen');
+        }
+
+        function showMenu() {
+            showScreen('menuScreen');
+        }
+
+        function showCreateRoom() {
+            showScreen('createRoomScreen');
+        }
+
+        function showJoinRoom() {
+            updateAvailableRooms();
+            showScreen('joinRoomScreen');
+        }
+
+        // Room management
+        function createRoom() {
+            const roomName = document.getElementById('roomName').value.trim();
+            
+            if (!roomName) {
+                showError('createRoomError', 'Nama room tidak boleh kosong!');
+                return;
+            }
+
+            const roomCode = generateRoomCode();
+            currentRoom = {
+                code: roomCode,
+                name: roomName,
+                players: [currentUser],
+                creator: currentUser,
+                gameState: {
+                    board: Array(9).fill(''),
+                    currentPlayer: 'X',
+                    gameOver: false,
+                    winner: null
+                }
+            };
+            
+            rooms[roomCode] = currentRoom;
+            document.getElementById('currentRoomCode').textContent = roomCode;
+            
+            initializeGame();
+            showScreen('gameScreen');
+        }
+
+        function joinRoom() {
+            const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+            
+            if (!roomCode) {
+                showError('joinRoomError', 'Kode room tidak boleh kosong!');
+                return;
+            }
+
+            const room = rooms[roomCode];
+            if (!room) {
+                showError('joinRoomError', 'Room tidak ditemukan!');
+                return;
+            }
+
+            if (room.players.length >= 2) {
+                showError('joinRoomError', 'Room sudah penuh!');
+                return;
+            }
+
+            if (room.players.includes(currentUser)) {
+                showError('joinRoomError', 'Anda sudah ada di room ini!');
+                return;
+            }
+
+            room.players.push(currentUser);
+            currentRoom = room;
+            document.getElementById('currentRoomCode').textContent = roomCode;
+            
+            initializeGame();
+            showScreen('gameScreen');
+        }
+
+        function joinRoomFromList(roomCode) {
+            document.getElementById('roomCode').value = roomCode;
+            joinRoom();
+        }
+
+        function generateRoomCode() {
+            return Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
+
+        function updateAvailableRooms() {
+            const availableRoomsDiv = document.getElementById('availableRooms');
+            availableRoomsDiv.innerHTML = '';
+
+            const availableRooms = Object.values(rooms).filter(room => 
+                room.players.length < 2 && !room.players.includes(currentUser)
+            );
+
+            if (availableRooms.length === 0) {
+                availableRoomsDiv.innerHTML = '<div style="text-align: center; opacity: 0.7;">Tidak ada room yang tersedia</div>';
+                return;
+            }
+
+            availableRooms.forEach(room => {
+                const roomItem = document.createElement('div');
+                roomItem.className = 'room-item';
+                roomItem.innerHTML = `
+                    <div>
+                        <div style="font-weight: bold;">${room.name}</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Code: ${room.code} | Players: ${room.players.length}/2</div>
+                    </div>
+                    <button class="btn" onclick="joinRoomFromList('${room.code}')" style="padding: 8px 15px; margin: 0;">Join</button>
+                `;
+                availableRoomsDiv.appendChild(roomItem);
+            });
+        }
+
+        // Game functionality
+        function initializeGame() {
+            if (!currentRoom) return;
+
+            gameState = { ...currentRoom.gameState };
+            
+            updatePlayerDisplay();
+            updateGameStatus();
+            updateBoard();
+            
+            // Determine if it's player's turn
+            if (currentRoom.players.length === 2) {
+                const playerIndex = currentRoom.players.indexOf(currentUser);
+                const currentPlayerSymbol = gameState.currentPlayer;
+                isPlayerTurn = (playerIndex === 0 && currentPlayerSymbol === 'X') || 
+                              (playerIndex === 1 && currentPlayerSymbol === 'O');
+            } else {
+                isPlayerTurn = false;
+            }
+        }
+
+        function updatePlayerDisplay() {
+            const player1Element = document.getElementById('player1');
+            const player2Element = document.getElementById('player2');
+            
+            if (currentRoom.players.length >= 1) {
+                player1Element.textContent = `${currentRoom.players[0]} (X)`;
+                player1Element.classList.toggle('active', gameState.currentPlayer === 'X' && !gameState.gameOver);
+            }
+            
+            if (currentRoom.players.length >= 2) {
+                player2Element.textContent = `${currentRoom.players[1]} (O)`;
+                player2Element.classList.toggle('active', gameState.currentPlayer === 'O' && !gameState.gameOver);
+            } else {
+                player2Element.textContent = 'Menunggu pemain...';
+                player2Element.classList.remove('active');
+            }
+        }
+
+        function updateGameStatus() {
+            const statusElement = document.getElementById('gameStatus');
+            
+            if (gameState.gameOver) {
+                if (gameState.winner) {
+                    const winnerName = gameState.winner === 'X' ? currentRoom.players[0] : currentRoom.players[1];
+                    statusElement.textContent = `🎉 ${winnerName} Menang!`;
+                    statusElement.className = 'status winner';
+                } else {
+                    statusElement.textContent = '🤝 Seri!';
+                    statusElement.className = 'status';
+                }
+            } else if (currentRoom.players.length < 2) {
+                statusElement.textContent = '⏳ Menunggu pemain lain...';
+                statusElement.className = 'status waiting waiting-animation';
+            } else {
+                const currentPlayerName = gameState.currentPlayer === 'X' ? currentRoom.players[0] : currentRoom.players[1];
+                statusElement.textContent = `🎯 Giliran ${currentPlayerName}`;
+                statusElement.className = 'status';
+            }
+        }
+
+        function updateBoard() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                cell.textContent = gameState.board[index];
+                cell.disabled = gameState.board[index] !== '' || gameState.gameOver || !isPlayerTurn || currentRoom.players.length < 2;
+            });
+        }
+
+        function makeMove(index) {
+            if (!currentRoom || gameState.gameOver || gameState.board[index] !== '' || !isPlayerTurn || currentRoom.players.length < 2) {
+                return;
+            }
+
+            // Make the move
+            gameState.board[index] = gameState.currentPlayer;
+            currentRoom.gameState.board[index] = gameState.currentPlayer;
+
+            // Check for winner
+            const winner = checkWinner();
+            if (winner) {
+                gameState.gameOver = true;
+                gameState.winner = winner;
+                currentRoom.gameState.gameOver = true;
+                currentRoom.gameState.winner = winner;
+            } else if (gameState.board.every(cell => cell !== '')) {
+                gameState.gameOver = true;
+                currentRoom.gameState.gameOver = true;
+            } else {
+                // Switch turns
+                gameState.currentPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
+                currentRoom.gameState.currentPlayer = gameState.currentPlayer;
+                
+                // Update turn status
+                const playerIndex = currentRoom.players.indexOf(currentUser);
+                const currentPlayerSymbol = gameState.currentPlayer;
+                isPlayerTurn = (playerIndex === 0 && currentPlayerSymbol === 'X') || 
+                              (playerIndex === 1 && currentPlayerSymbol === 'O');
+            }
+
+            updatePlayerDisplay();
+            updateGameStatus();
+            updateBoard();
+        }
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6] // Diagonals
+            ];
+
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (gameState.board[a] && gameState.board[a] === gameState.board[b] && gameState.board[a] === gameState.board[c]) {
+                    return gameState.board[a];
+                }
+            }
+            return null;
+        }
+
+        function resetGame() {
+            if (!currentRoom) return;
+
+            gameState = {
+                board: Array(9).fill(''),
+                currentPlayer: 'X',
+                gameOver: false,
+                winner: null
+            };
+            
+            currentRoom.gameState = { ...gameState };
+            
+            // Reset turn status
+            if (currentRoom.players.length === 2) {
+                const playerIndex = currentRoom.players.indexOf(currentUser);
+                isPlayerTurn = playerIndex === 0; // Player 1 (X) goes first
+            }
+
+            updatePlayerDisplay();
+            updateGameStatus();
+            updateBoard();
+        }
+
+        function leaveRoom() {
+            if (currentRoom) {
+                // Remove player from room
+                currentRoom.players = currentRoom.players.filter(player => player !== currentUser);
+                
+                // Delete room if empty
+                if (currentRoom.players.length === 0) {
+                    delete rooms[currentRoom.code];
+                }
+            }
+            
+            currentRoom = null;
+            isPlayerTurn = false;
+            showScreen('menuScreen');
+        }
+
+        // Auto-refresh available rooms every 5 seconds when on join room screen
+        setInterval(() => {
+            const joinRoomScreen = document.getElementById('joinRoomScreen');
+            if (joinRoomScreen.classList.contains('active')) {
+                updateAvailableRooms();
+            }
+        }, 5000);
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentRoom) {
+                leaveRoom();
+            }
+        });
+    </script>
+</body>
+</html>
