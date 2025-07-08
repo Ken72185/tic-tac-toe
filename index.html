@@ -371,6 +371,9 @@
         }
 
         function showJoinRoom() {
+            // Clear previous input
+            document.getElementById('roomCode').value = '';
+            document.getElementById('joinRoomError').style.display = 'none';
             updateAvailableRooms();
             showScreen('joinRoomScreen');
         }
@@ -385,6 +388,8 @@
             }
 
             const roomCode = generateRoomCode();
+            console.log('Creating room with code:', roomCode);
+            
             currentRoom = {
                 code: roomCode,
                 name: roomName,
@@ -399,6 +404,9 @@
             };
             
             rooms[roomCode] = currentRoom;
+            console.log('Room created:', currentRoom);
+            console.log('All rooms:', rooms);
+            
             document.getElementById('currentRoomCode').textContent = roomCode;
             
             initializeGame();
@@ -413,9 +421,12 @@
                 return;
             }
 
+            console.log('Trying to join room:', roomCode);
+            console.log('Available rooms:', Object.keys(rooms));
+
             const room = rooms[roomCode];
             if (!room) {
-                showError('joinRoomError', 'Room tidak ditemukan!');
+                showError('joinRoomError', 'Room tidak ditemukan! Pastikan kode room benar.');
                 return;
             }
 
